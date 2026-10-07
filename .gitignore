@@ -1,0 +1,24 @@
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Build
+backend/target/
+frontend/.nuxt/
+frontend/.output/
+frontend/node_modules/
+
+# Local secrets and environment
+.env
+.env.*
+!.env.example
+backend/src/main/resources/application-local-secret.yml
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

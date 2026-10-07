@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hootoom.forum.governance.mapper.SensitiveWordMapper">
+    <resultMap id="SensitiveWordResult" type="com.hootoom.forum.governance.entity.SensitiveWord">
+        <id property="id" column="id"/>
+        <result property="normalizedWord" column="normalized_word"/>
+        <result property="matchType" column="match_type"/>
+        <result property="action" column="action"/>
+    </resultMap>
+    <select id="findAllActive" resultMap="SensitiveWordResult">
+        SELECT id, normalized_word, match_type, action
+        FROM sensitive_word
+        WHERE status = 'ACTIVE'
+        ORDER BY CASE action WHEN 'REJECT' THEN 0 ELSE 1 END, id
+    </select>
+</mapper>

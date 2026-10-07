@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hootoom.forum.auth.mapper.RefreshTokenMapper">
+    <resultMap id="RefreshTokenResult" type="com.hootoom.forum.auth.entity.RefreshToken">
+        <id property="id" column="id"/><result property="subjectType" column="subject_type"/>
+        <result property="userId" column="user_id"/><result property="adminUserId" column="admin_user_id"/>
+        <result property="tokenHash" column="token_hash"/><result property="familyId" column="family_id"/>
+        <result property="deviceName" column="device_name"/><result property="expiresAt" column="expires_at"/>
+        <result property="lastUsedAt" column="last_used_at"/><result property="revokedAt" column="revoked_at"/>
+        <result property="revokeReason" column="revoke_reason"/><result property="createdAt" column="created_at"/>
+    </resultMap>
+    <insert id="insert" parameterType="com.hootoom.forum.auth.entity.RefreshToken" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO refresh_token (subject_type, user_id, admin_user_id, token_hash, family_id, device_name, expires_at)
+        VALUES (#{subjectType}, #{userId}, #{adminUserId}, #{tokenHash}, #{familyId}, #{deviceName}, #{expiresAt})
+    </insert>
+    <select id="findByHashForUpdate" resultMap="RefreshTokenResult">
+        SELECT id, subject_type, user_id, admin_user_id, token_hash, family_id, device_name,
+               expires_at, last_used_at, revoked_at, revoke_reason, created_at
+        FROM refresh_token WHERE token_hash = #{tokenHash} LIMIT 1 FOR UPDATE
+    </select>
+    <update id="revokeById">
+        UPDATE refresh_token SET revoked_at = #{revokedAt}, revoke_reason = #{reason}, last_used_at = #{revokedAt}
+        WHERE id = #{id} AND revoked_at IS NULL
+    </update>
+    <update id="revokeFamily">
+        UPDATE refresh_token SET revoke_reason = CASE WHEN revoked_at IS NULL THEN #{reason} ELSE revoke_reason END,
+            revoked_at = COALESCE(revoked_at, #{revokedAt})
+        WHERE family_id = #{familyId}
+    </update>
+    <update id="revokeAllForUser">
+        UPDATE refresh_token
+        SET revoke_reason = #{reason}, revoked_at = #{revokedAt}
+        WHERE user_id = #{userId} AND revoked_at IS NULL
+    </update>
+    <select id="findActiveByUser" resultMap="RefreshTokenResult">
+        SELECT id, subject_type, user_id, admin_user_id, token_hash, family_id, device_name,
+               expires_at, last_used_at, revoked_at, revoke_reason, created_at
+        FROM refresh_token
+        WHERE user_id = #{userId} AND revoked_at IS NULL AND expires_at &gt; #{now}
+        ORDER BY created_at DESC, id DESC
+    </select>
+    <update id="revokeOwnedSession">
+        UPDATE refresh_token
+        SET revoked_at = #{revokedAt}, revoke_reason = #{reason}
+        WHERE id = #{id} AND user_id = #{userId} AND revoked_at IS NULL
+    </update>
+</mapper>

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hootoom.forum.auth.mapper.ForumUserMapper">
+    <resultMap id="ForumUserResult" type="com.hootoom.forum.auth.entity.ForumUser">
+        <id property="id" column="id"/>
+        <result property="username" column="username"/><result property="email" column="email"/>
+        <result property="emailVerifiedAt" column="email_verified_at"/>
+        <result property="passwordHash" column="password_hash"/><result property="tokenVersion" column="token_version"/>
+        <result property="nickname" column="nickname"/><result property="avatarKey" column="avatar_key"/>
+        <result property="status" column="status"/><result property="lastLoginAt" column="last_login_at"/>
+    </resultMap>
+    <select id="existsByUsername" resultType="boolean">
+        SELECT EXISTS(
+            SELECT 1 FROM forum_user WHERE username = #{username} LIMIT 1
+        )
+    </select>
+
+    <select id="existsByEmail" resultType="boolean">
+        SELECT EXISTS(
+            SELECT 1 FROM forum_user WHERE email = #{email} LIMIT 1
+        )
+    </select>
+
+    <insert id="insert" parameterType="com.hootoom.forum.auth.entity.ForumUser"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO forum_user (
+            username, email, password_hash, nickname, avatar_key, status,
+            policy_version, policy_accepted_at
+        ) VALUES (
+            #{username}, #{email}, #{passwordHash}, #{nickname}, #{avatarKey}, #{status},
+            #{policyVersion}, #{policyAcceptedAt}
+        )
+    </insert>
+
+    <update id="activatePendingUser">
+        UPDATE forum_user
+        SET status = 'ACTIVE',
+            email_verified_at = UTC_TIMESTAMP(3),
+            updated_at = UTC_TIMESTAMP(3),
+            version = version + 1
+        WHERE id = #{userId}
+          AND status = 'PENDING'
+          AND email_verified_at IS NULL
+    </update>
+
+    <select id="findByIdentifier" resultMap="ForumUserResult">
+        SELECT id, username, email, email_verified_at, password_hash, token_version,
+               nickname, avatar_key, status, last_login_at
+        FROM forum_user
+        WHERE username = #{identifier} OR email = #{identifier}
+        LIMIT 1
+    </select>
+
+    <select id="findById" resultMap="ForumUserResult">
+        SELECT id, username, email, email_verified_at, password_hash, token_version,
+               nickname, avatar_key, status, last_login_at
+        FROM forum_user WHERE id = #{id} LIMIT 1
+    </select>
+
+    <select id="findByEmail" resultMap="ForumUserResult">
+        SELECT id, username, email, email_verified_at, password_hash, token_version,
+               nickname, avatar_key, status, last_login_at
+        FROM forum_user WHERE email = #{email} LIMIT 1
+    </select>
+
+    <update id="updateLastLoginAt">
+        UPDATE forum_user SET last_login_at = #{lastLoginAt}, updated_at = UTC_TIMESTAMP(3)
+        WHERE id = #{id}
+    </update>
+
+    <update id="updatePassword">
+        UPDATE forum_user
+        SET password_hash = #{passwordHash}, token_version = token_version + 1,
+            updated_at = #{updatedAt}, version = version + 1
+        WHERE id = #{id} AND status = 'ACTIVE'
+    </update>
+</mapper>
